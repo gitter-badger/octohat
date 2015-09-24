@@ -13,22 +13,36 @@ def main():
   parser.add_argument("-l", "--limit", help="Limit to the last x Issues/Pull Requests", type=int, default=0)
   parser.add_argument("-c", "--show-contributors", action='store_true', help="Output the code contributors as well")
   parser.add_argument("-n", "--show-names", action='store_true', help="")
+  parser.add_argument("-o", "--open", help="TESTING - load code/non-code from file") #, type=argparse.FileType('r'))
+  parser.add_argument("-s", "--save", help="TESTING - save code/non-code to file") #, type=argparse.FileType('w'))
   args = parser.parse_args()  
 
   repo_name = args.repo_name
 
-  if not repo_exists(repo_name): 
-    print("Repo does not exist: %s" % repo_name)
-    sys.exit(1)
+  if args.open:
+      contents = json.load(open(args.open))
+      code_contributors = contents["code"]
+      non_code_contributors = contents["non_code"]
 
-  code_contributors = get_code_contributors(repo_name)
-  code_commentors = get_code_commentors(repo_name, args.limit)
+  else: 
+    if not repo_exists(repo_name): 
+      print("Repo does not exist: %s" % repo_name)
+      sys.exit(1)
 
-  non_code_contributors = []
-  for user in code_commentors:
-    user_name, avatar, name = user 
-    if user not in code_contributors:
-      non_code_contributors.append(user)
+    code_contributors = get_code_contributors(repo_name)
+    code_commentors = get_code_commentors(repo_name, args.limit)
+
+    non_code_contributors = []
+    for user in code_commentors:
+      user_name, avatar, name = user 
+      if user not in code_contributors:
+        non_code_contributors.append(user)
+
+  if args.save:
+    contents = { 'code': code_contributors, 'non_code': non_code_contributors }
+    f = open(args.save, "w")
+    f.write(json.dumps(contents))
+    f.close
 
   print("Code contributions: %d" % len(code_contributors))
 
